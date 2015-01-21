@@ -24,7 +24,32 @@ class Member {
 	 */
 	private $userName;
 
-//Constructor goes here
+	/**
+	 * constructor for member
+	 *
+	 * @param mixed $newMemberId member id of the user
+	 * @param string $newFirstName first name of the user
+	 * @param string $newLastName last name of the user
+	 * @param string $newUserName username of the user
+	 * @throws InvalidArgumentException if data types are invalid
+	 * @throws RangeException if data values are out of bounds
+	 */
+
+	public function __construct($newMemberId, $newFirstName, $newLastName, $newUserName) {
+		// use the mutators to do the work for us
+		try {
+			$this->setMemberId($newMemberId);
+			$this->setFirstName($newFirstName);
+			$this->setLastName($newLastName);
+			$this->setUserName($newUserName);
+		} catch(InvalidArgumentException $invalidArgument) {
+			// rethrow the exception to the caller
+			throw(new InvalidArgumentException($invalidArgument->getMessage(), 0, $invalidArgument));
+		} catch(RangeException $range) {
+			// rethrow the exception to the caller
+			throw(new RangeException($range->getMessage(),0,$range));
+		}
+	}
 
 	/**
 	 * accessor method for the member id
