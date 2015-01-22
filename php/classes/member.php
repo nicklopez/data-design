@@ -47,7 +47,7 @@ class Member {
 			throw(new InvalidArgumentException($invalidArgument->getMessage(), 0, $invalidArgument));
 		} catch(RangeException $range) {
 			// rethrow the exception to the caller
-			throw(new RangeException($range->getMessage(),0,$range));
+			throw(new RangeException($range->getMessage(), 0, $range));
 		}
 	}
 
@@ -191,6 +191,126 @@ class Member {
 
 		// store username
 		$this->userName = $newUserName;
+	}
+
+	/**
+	 * inserts member into mySQL
+	 *
+	 * @param resource $mysqli pointer to mySQL connection, by reference
+	 * @throws mysqli_sql_exception when mySQL related errors occur
+	 **/
+	public function insert(&$mysqli) {
+		// handle degenerate cases
+		if(gettype($mysqli) !== "object" || get_class($mysqli) !== "mysqli") {
+			throw(new mysqli_sql_exception("input is not a mysqli object"));
+		}
+
+		// enforce the memberId is null (i.e., don't insert a member that already exists)
+		if($this->memberId !== null) {
+			throw(new mysqli_sql_exception("not a new member"));
+		}
+
+		// create query template
+		$query = "INSERT INTO member(firstName, lastName, userName) VALUES(?, ?, ?)";
+		$statement = $mysqli->prepare($query);
+		if($statement === false) {
+			throw(new mysqli_sql_exception("unable to prepare statement"));
+		}
+
+		// bind the member variables to the place holders in the template
+		$wasClean = $statement->bind_param("sss", $this->firstName, $this->lastName, $this->userName);
+		if($wasClean === false) {
+			throw(new mysqli_sql_exception("unable to bind parameters"));
+		}
+
+		// execute the statement
+		if($statement->execute() === false) {
+			throw(new mysqli_sql_exception("unable to execute mySQL statement: " . $statement->error));
+		}
+
+		// update the null memberId with what mySQL just gave us
+		$this->memberId = $mysqli->insert_id;
+
+		// clean up the statement
+		$statement->close();
+	}
+
+	/**
+	 * deletes a member from mySQL
+	 *
+	 * @param resource $mysqli pointer to mySQL connection, by reference
+	 * @throws mysqli_sql_exception when mySQL related errors occur
+	 **/
+	public function delete(&$mysqli) {
+		// handle degenerate cases
+		if(gettype($mysqli) !== "object" || get_class($mysqli) !== "mysqli") {
+			throw(new mysqli_sql_exception("input is not a mysqli object"));
+		}
+
+		// enforce the memberId is not null (i.e., don't delete a member that hasn't been inserted)
+		if($this->memberId === null) {
+			throw(new mysqli_sql_exception("unable to delete a member that does not exist"));
+		}
+
+		// create query template
+		$query = "DELETE FROM member WHERE memberId = ?";
+		$statement = $mysqli->prepare($query);
+		if($statement === false) {
+			throw(new mysqli_sql_exception("unable to prepare statement"));
+		}
+
+		// bind the member variables to the place holder in the template
+		$wasClean = $statement->bind_param("i", $this->memberId);
+		if($wasClean === false) {
+			throw(new mysqli_sql_exception("unable to bind parameters"));
+		}
+
+		// execute the statement
+		if($statement->execute() === false) {
+			throw(new mysqli_sql_exception("unable to execute mySQL statement: " . $statement->error));
+		}
+
+		// clean up the statement
+		$statement->close();
+	}
+
+	/**
+	 * updates a member in mySQL
+	 *
+	 * @param resource $mysqli pointer to mySQL connection, by reference
+	 * @throws mysqli_sql_exception when mySQL related errors occur
+	 **/
+	public function update(&$mysqli) {
+		// handle degenerate cases
+		if(gettype($mysqli) !== "object" || get_class($mysqli) !== "mysqli") {
+			throw(new mysqli_sql_exception("input is not a mysqli object"));
+		}
+
+		// enforce the memberId is not null (i.e., don't update a member that hasn't been inserted)
+		if($this->memberId === null) {
+			throw(new mysqli_sql_exception("unable to update a member that does not exist"));
+		}
+
+		// create query template
+		$query = "UPDATE member SET firstName = ?, lastName = ?, userName = ? WHERE memberId = ?";
+		$statement = $mysqli->prepare($query);
+		if($statement === false) {
+			throw(new mysqli_sql_exception("unable to prepare statement"));
+		}
+
+		// bind the member variables to the place holders in the template
+		$wasClean = $statement->bind_param("sssi", $this->firstName, $this->lastName, $this->userName, $this->memberId);
+		if($wasClean === false) {
+			throw(new mysqli_sql_exception("unable to bind parameters"));
+		}
+
+		// execute the statement
+		if($statement->execute() === false) {
+			throw(new mysqli_sql_exception("unable to execute mySQL statement: " . $statement->error));
+		}
+
+		// clean up the statement
+		$statement->close();
 	}
 }
 ?>
