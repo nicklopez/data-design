@@ -34,7 +34,6 @@ class Member {
 	 * @throws InvalidArgumentException if data types are invalid
 	 * @throws RangeException if data values are out of bounds
 	 */
-
 	public function __construct($newMemberId, $newFirstName, $newLastName, $newUserName) {
 		// use the mutators to do the work for us
 		try {
@@ -67,8 +66,6 @@ class Member {
 	 * @throws InvalidArgumentException if $newMemberId is not an integer
 	 * @throws RangeException if $newMemberId is not positive
 	 */
-
-
 	public function setMemberId($newMemberId) {
 		// If member id is null, it is a new primary key value
 		if($newMemberId === null) {
@@ -107,7 +104,6 @@ class Member {
 	 * @throws InvalidArgumentException if $newFirstName is not a string or insecure
 	 * @throws RangeException if $newFirstName is > 25 characters
 	 */
-
 	public function setFirstName($newFirstName) {
 		// verify first name is valid
 		$newFirstName = trim($newFirstName);
@@ -141,7 +137,6 @@ class Member {
 	 * @throws InvalidArgumentException if $newLastName is not a string or insecure
 	 * @throws RangeException if $newLastName is > 25 characters
 	 */
-
 	public function setLastName($newLastName) {
 		//verify last name is valid
 		$newLastName = trim($newLastName);
@@ -175,7 +170,6 @@ class Member {
 	 * @throws InvalidArgumentException if $newUserName is not a string or insecure
 	 * @throws RangeException if $newUserName is > 25 characters
 	 */
-
 	public function setUserName($newUserName) {
 		// verify username is valid
 		$newUserName = trim($newUserName);
