@@ -306,5 +306,70 @@ class Member {
 		// clean up the statement
 		$statement->close();
 	}
+
+	/**
+	 * gets the member by memberId
+	 *
+	 * @param resource $mysqli pointer to mySQL connection, by reference
+	 * @param int $memberId member content to search for
+	 * @return mixed member found or null if not found
+	 * @throws mysqli_sql_exception when mySQL related errors occur
+	 **/
+	public static function getMemberByMemberId(&$mysqli, $memberId) {
+		// handle degenerate cases
+		if(gettype($mysqli) !== "object" || get_class($mysqli) !== "mysqli") {
+			throw(new mysqli_sql_exception("input is not a mysqli object"));
+		}
+
+		// sanitize the memberId before searching
+		$memberId = filter_var($memberId, FILTER_VALIDATE_INT);
+		if($memberId === false) {
+			throw(new mysqli_sql_exception("member id is not an integer"));
+		}
+		if($memberId <= 0) {
+			throw(new mysqli_sql_exception("member id is not positive"));
+		}
+
+		// create query template
+		$query	 = "SELECT memberId, firstName, lastName, userName FROM member WHERE memberId = ?";
+		$statement = $mysqli->prepare($query);
+		if($statement === false) {
+			throw(new mysqli_sql_exception("unable to prepare statement"));
+		}
+
+		// bind the member id to the place holder in the template
+		$wasClean = $statement->bind_param("i", $memberId);
+		if($wasClean === false) {
+			throw(new mysqli_sql_exception("unable to bind parameters"));
+		}
+
+		// execute the statement
+		if($statement->execute() === false) {
+			throw(new mysqli_sql_exception("unable to execute mySQL statement: " . $statement->error));
+		}
+
+		// get result from the SELECT query
+		$result = $statement->get_result();
+		if($result === false) {
+			throw(new mysqli_sql_exception("unable to get result set"));
+		}
+
+		// grab the member from mySQL
+		try {
+			$member = null;
+			$row   = $result->fetch_assoc();
+			if($row !== null) {
+				$member = new Member($row["memberId"], $row["firstName"], $row["lastName"], $row["userName"]);
+			}
+		} catch(Exception $exception) {
+			// if the row couldn't be converted, rethrow it
+			throw(new mysqli_sql_exception($exception->getMessage(), 0, $exception));
+		}
+
+		// free up memory and return the result
+		$result->free();
+		$statement->close();
+		return($member);
+	}
 }
 ?>
