@@ -306,5 +306,70 @@ class Item {
 		// clean up the statement
 		$statement->close();
 	}
+
+	/**
+	 * gets the item by itemId
+	 *
+	 * @param resource $mysqli pointer to mySQL connection, by reference
+	 * @param int $itemId item content to search for
+	 * @return mixed item found or null if not found
+	 * @throws mysqli_sql_exception when mySQL related errors occur
+	 **/
+	public static function getItemByItemId(&$mysqli, $itemId) {
+		// handle degenerate cases
+		if(gettype($mysqli) !== "object" || get_class($mysqli) !== "mysqli") {
+			throw(new mysqli_sql_exception("input is not a mysqli object"));
+		}
+
+		// sanitize the itemId before searching
+		$itemId = filter_var($itemId, FILTER_VALIDATE_INT);
+		if($itemId === false) {
+			throw(new mysqli_sql_exception("item id is not an integer"));
+		}
+		if($itemId <= 0) {
+			throw(new mysqli_sql_exception("item id is not positive"));
+		}
+
+		// create query template
+		$query	 = "SELECT itemId, itemBrand, itemDescription, itemModel FROM item WHERE itemId = ?";
+		$statement = $mysqli->prepare($query);
+		if($statement === false) {
+			throw(new mysqli_sql_exception("unable to prepare statement"));
+		}
+
+		// bind the item id to the place holder in the template
+		$wasClean = $statement->bind_param("i", $itemId);
+		if($wasClean === false) {
+			throw(new mysqli_sql_exception("unable to bind parameters"));
+		}
+
+		// execute the statement
+		if($statement->execute() === false) {
+			throw(new mysqli_sql_exception("unable to execute mySQL statement: " . $statement->error));
+		}
+
+		// get result from the SELECT query
+		$result = $statement->get_result();
+		if($result === false) {
+			throw(new mysqli_sql_exception("unable to get result set"));
+		}
+
+		// grab the item from mySQL
+		try {
+			$item = null;
+			$row   = $result->fetch_assoc();
+			if($row !== null) {
+				$item = new Item($row["itemId"], $row["itemBrand"], $row["itemDescription"], $row["itemModel"]);
+			}
+		} catch(Exception $exception) {
+			// if the row couldn't be converted, rethrow it
+			throw(new mysqli_sql_exception($exception->getMessage(), 0, $exception));
+		}
+
+		// free up memory and return the result
+		$result->free();
+		$statement->close();
+		return($item);
+	}
 }
 ?>

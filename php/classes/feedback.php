@@ -196,7 +196,7 @@ class Feedback {
 	 *
 	 * @return int value for rating
 	 */
-	public function getRatingId() {
+	public function getRating() {
 		return ($this->rating);
 	}
 
@@ -341,6 +341,71 @@ class Feedback {
 
 		// clean up the statement
 		$statement->close();
+	}
+
+	/**
+	 * gets the feedback by feedbackId
+	 *
+	 * @param resource $mysqli pointer to mySQL connection, by reference
+	 * @param int $feedbackId feedback content to search for
+	 * @return mixed feedback found or null if not found
+	 * @throws mysqli_sql_exception when mySQL related errors occur
+	 **/
+	public static function getFeedbackByFeedbackId(&$mysqli, $feedbackId) {
+		// handle degenerate cases
+		if(gettype($mysqli) !== "object" || get_class($mysqli) !== "mysqli") {
+			throw(new mysqli_sql_exception("input is not a mysqli object"));
+		}
+
+		// sanitize the feedbackId before searching
+		$feedbackId = filter_var($feedbackId, FILTER_VALIDATE_INT);
+		if($feedbackId === false) {
+			throw(new mysqli_sql_exception("feedback id is not an integer"));
+		}
+		if($feedbackId <= 0) {
+			throw(new mysqli_sql_exception("feedback id is not positive"));
+		}
+
+		// create query template
+		$query	 = "SELECT feedbackId, auctionId, memberId, feedbackDescription, rating FROM feedback WHERE feedbackId = ?";
+		$statement = $mysqli->prepare($query);
+		if($statement === false) {
+			throw(new mysqli_sql_exception("unable to prepare statement"));
+		}
+
+		// bind the feedback id to the place holder in the template
+		$wasClean = $statement->bind_param("i", $feedbackId);
+		if($wasClean === false) {
+			throw(new mysqli_sql_exception("unable to bind parameters"));
+		}
+
+		// execute the statement
+		if($statement->execute() === false) {
+			throw(new mysqli_sql_exception("unable to execute mySQL statement: " . $statement->error));
+		}
+
+		// get result from the SELECT query
+		$result = $statement->get_result();
+		if($result === false) {
+			throw(new mysqli_sql_exception("unable to get result set"));
+		}
+
+		// grab feedback from mySQL
+		try {
+			$feedback = null;
+			$row   = $result->fetch_assoc();
+			if($row !== null) {
+				$feedback = new Feedback($row["feedbackId"], $row["auctionId"], $row["memberId"], $row["feedbackDescription"], $row["rating"]);
+			}
+		} catch(Exception $exception) {
+			// if the row couldn't be converted, rethrow it
+			throw(new mysqli_sql_exception($exception->getMessage(), 0, $exception));
+		}
+
+		// free up memory and return the result
+		$result->free();
+		$statement->close();
+		return($feedback);
 	}
 }
 ?>
