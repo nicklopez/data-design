@@ -432,4 +432,3 @@ class Bid {
 		return($bid);
 	}
 }
-?>
